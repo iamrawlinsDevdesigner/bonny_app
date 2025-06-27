@@ -47,6 +47,10 @@ $user = $_SESSION['user'] ?? null;
     <?php else: ?>
       <p>Join the Bonny Island community by logging in or registering.</p>
     <?php endif; ?>
+    <?php if ($user): ?>
+  <a href="views/user/my_listings.php">My Listings</a>
+<?php endif; ?>
+
   </div>
 
   <!-- Dashboard Links -->
