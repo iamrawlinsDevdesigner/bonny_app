@@ -1,11 +1,21 @@
 .flash {
-  padding: 10px;
-  margin: 10px;
-  border-radius: 5px;
+  padding: 10px 15px;
+  margin: 15px auto;
+  max-width: 600px;
+  text-align: center;
+  border-radius: 6px;
   font-weight: bold;
 }
-.flash.success { background-color: #d4edda; color: #155724; }
-.flash.error { background-color: #f8d7da; color: #721c24; }
+
+.flash.success {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.flash.error {
+  background-color: #f8d7da;
+  color: #721c24;
+}
 
 /* General Layout */
 body {
@@ -151,4 +161,100 @@ body {
 .filter-form button {
   padding: 8px;
   font-size: 14px;
+}
+.listing-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.listing-card {
+  display: flex;
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 0 8px rgba(0,0,0,0.05);
+  padding: 15px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.listing-left {
+  width: 120px;
+  text-align: center;
+  position: relative;
+}
+
+.status-badge {
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  background: orange;
+  color: white;
+  padding: 4px 8px;
+  font-size: 12px;
+  border-radius: 5px;
+}
+
+.status-badge.approved {
+  background: #28a745;
+}
+
+.photo-box {
+  background: #f5f7fa;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #bbb;
+  font-size: 14px;
+  border-radius: 6px;
+}
+
+.listing-center {
+  flex: 1;
+  padding: 0 20px;
+}
+
+.listing-center h3 {
+  margin: 0;
+  font-size: 20px;
+  color: #333;
+}
+
+.tags {
+  margin: 5px 0;
+}
+
+.tag {
+  display: inline-block;
+  padding: 3px 8px;
+  background: #f8f9fa;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-right: 5px;
+  font-size: 12px;
+}
+
+.metrics {
+  font-size: 14px;
+  color: #666;
+  margin-top: 8px;
+}
+
+.listing-right {
+  text-align: right;
+}
+
+.edit-link,
+.delete-link {
+  display: block;
+  margin-bottom: 8px;
+  text-decoration: none;
+  font-weight: bold;
+  color: #007bff;
+}
+
+.delete-link {
+  color: #dc3545;
 }

@@ -12,4 +12,20 @@ function display_flash($name) {
     unset($_SESSION['flash'][$name]);
   }
 }
+
+function has_flash($key) {
+  return isset($_SESSION['flash'][$key]);
+}
+
+function get_flash($key) {
+  if (!isset($_SESSION['flash'][$key])) return null;
+  $msg = $_SESSION['flash'][$key]['message'];
+  unset($_SESSION['flash'][$key]); // Clear after reading
+  return $msg;
+}
+
+function get_flash_type($key) {
+  return $_SESSION['flash'][$key]['type'] ?? 'info';
+}
+
 ?>
