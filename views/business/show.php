@@ -230,6 +230,32 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     loadReviews(currentPage);
 });
+
+function likeReview(review_id) {
+    fetch("../../controllers/like_review.php", {
+        method: "POST",
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: "review_id=" + review_id
+    })
+    .then(res => res.text())
+    .then(newCount => {
+        document.getElementById('like-count-' + review_id).innerText = newCount;
+    });
+}
+
+function dislikeReview(review_id) {
+    fetch("../../controllers/dislike_review.php", {
+        method: "POST",
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: "review_id=" + review_id
+    })
+    .then(res => res.text())
+    .then(newCount => {
+        document.getElementById('dislike-count-' + review_id).innerText = newCount;
+    });
+}
+
+
 </script>
 </body>
 </html>
