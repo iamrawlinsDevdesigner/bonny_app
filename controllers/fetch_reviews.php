@@ -39,8 +39,16 @@ foreach ($reviews as $rev): ?>
 
     <?php if (isset($_SESSION['user']) && $_SESSION['user']['id'] == $rev['user_id']): ?>
       <div class="review-actions">
-        <button onclick="openEditModal(<?= $rev['id'] ?>, '<?= htmlspecialchars(addslashes($rev['content'])) ?>', <?= $rev['rating'] ?>)">✏️</button>
-        <button onclick="deleteReview(<?= $rev['id'] ?>)">🗑️</button>
+        <!-- Safe Edit button with encoded content -->
+        <button 
+            class="edit-btn" 
+            data-review-id="<?= $rev['id'] ?>" 
+            data-content="<?= htmlspecialchars($rev['content'], ENT_QUOTES) ?>" 
+            data-rating="<?= $rev['rating'] ?>">
+          ✏️ Edit
+        </button>
+        <!-- Delete button -->
+        <button onclick="deleteReview(<?= $rev['id'] ?>)">🗑️ Delete</button>
       </div>
     <?php endif; ?>
   </div>
