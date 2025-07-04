@@ -12,9 +12,5 @@ $stmt->execute([$biz_id]);
 $row = $stmt->fetch();
 
 $avg_rating = $row['avg_rating'];
-if ($avg_rating) {
-    echo round($avg_rating, 1) . " / 5";
-} else {
-    echo "No ratings yet";
-}
+echo $avg_rating ? round($avg_rating, 1) . " / 5" : "No ratings yet";
 ?>

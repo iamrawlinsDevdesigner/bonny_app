@@ -17,13 +17,9 @@ if ($biz_id <= 0 || empty($content) || $rating < 1 || $rating > 5) {
     exit;
 }
 
-// Save review
+// Save
 $stmt = $pdo->prepare("INSERT INTO reviews (business_id, user_id, content, rating, created_at) VALUES (?, ?, ?, ?, NOW())");
 $success = $stmt->execute([$biz_id, $user_id, $content, $rating]);
 
-if ($success) {
-    echo "Review submitted successfully.";
-} else {
-    echo "Failed to submit review.";
-}
+echo $success ? "Review submitted successfully." : "Failed to submit review.";
 ?>

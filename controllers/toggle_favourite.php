@@ -21,12 +21,12 @@ $stmt->execute([$user_id, $biz_id]);
 $is_fav = $stmt->fetchColumn();
 
 if ($is_fav) {
-    // Remove favourite
+    // Remove
     $del = $pdo->prepare("DELETE FROM favourites WHERE user_id = ? AND business_id = ?");
     $del->execute([$user_id, $biz_id]);
     echo "🤍 Favourite";
 } else {
-    // Add favourite
+    // Add
     $add = $pdo->prepare("INSERT INTO favourites (user_id, business_id) VALUES (?, ?)");
     $add->execute([$user_id, $biz_id]);
     echo "❤️ Favourited";

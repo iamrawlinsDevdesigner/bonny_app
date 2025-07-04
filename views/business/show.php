@@ -1,7 +1,7 @@
 <?php
-include '../../includes/db.php';
-include '../../includes/flash.php';
-session_start();
+include __DIR__ . '/../../includes/db.php';
+include __DIR__ . '/../../includes/flash.php';
+if (session_status() === PHP_SESSION_NONE) session_start();
 
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
     echo "Invalid business ID.";
@@ -22,32 +22,6 @@ if (!$biz) {
     echo "Business not found.";
     exit;
 }
-
-// Check if user has favourited
-$is_favourited = false;
-if (isset($_SESSION['user'])) {
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM favourites WHERE user_id = ? AND business_id = ?");
-    $stmt->execute([$_SESSION['user']['id'], $biz_id]);
-    $is_favourited = $stmt->fetchColumn() > 0;
-}
-
-// Reviews pagination
-$page = max(1, (int)($_GET['page'] ?? 1));
-$perPage = 5;
-$offset = ($page - 1) * $perPage;
-
-$stmt = $pdo->prepare("SELECT r.*, u.name FROM reviews r JOIN users u ON r.user_id = u.id WHERE business_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?");
-$stmt->bindParam(1, $biz_id, PDO::PARAM_INT);
-$stmt->bindParam(2, $perPage, PDO::PARAM_INT);
-$stmt->bindParam(3, $offset, PDO::PARAM_INT);
-$stmt->execute();
-$reviews = $stmt->fetchAll();
-
-// Total reviews for pagination
-$count_stmt = $pdo->prepare("SELECT COUNT(*) FROM reviews WHERE business_id = ?");
-$count_stmt->execute([$biz_id]);
-$total_reviews = $count_stmt->fetchColumn();
-$total_pages = ceil($total_reviews / $perPage);
 ?>
 
 <!DOCTYPE html>
@@ -56,12 +30,49 @@ $total_pages = ceil($total_reviews / $perPage);
     <title><?= htmlspecialchars($biz['name']) ?> - Business</title>
     <link rel="stylesheet" href="../../assets/css/style.css">
     <style>
-        .map-container iframe { width: 100%; height: 300px; border: 0; }
-        .review-box { background: #f9f9f9; padding: 10px; margin-bottom: 10px; border-left: 3px solid #333; }
+        .map-container iframe {
+            width: 100%;
+            height: 300px;
+            border: 0;
+        }
+        .review-box {
+            background: #f9f9f9;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-left: 3px solid #333;
+            border-radius: 5px;
+        }
         .stars { color: #f5a623; }
-        .review-actions a { margin-right: 10px; font-size: 14px; }
-        .favourite-btn { background: <?= $is_favourited ? '#e74c3c' : '#3498db' ?>; color: #fff; padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; }
-        .pagination a { margin: 0 5px; text-decoration: none; }
+        .review-actions button {
+            margin-right: 8px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .favorite-btn { color: red; cursor: pointer; }
+        #loadMoreBtn {
+            background: #007bff; color: #fff;
+            border: none; padding: 10px 20px; border-radius: 4px;
+            cursor: pointer;
+        }
+        #loadMoreBtn:hover { background: #0056b3; }
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            width: 400px;
+            max-width: 90%;
+        }
     </style>
 </head>
 <body>
@@ -74,17 +85,12 @@ $total_pages = ceil($total_reviews / $perPage);
     <?php endif; ?>
 
     <p><strong>Category:</strong> <?= htmlspecialchars($biz['category'] ?? 'N/A') ?></p>
-    <p><strong>Phone:</strong> <a href="tel:<?= $biz['phone'] ?>"><?= $biz['phone'] ?></a></p>
+    <p><strong>Phone:</strong> <a href="tel:<?= htmlspecialchars($biz['phone']) ?>"><?= htmlspecialchars($biz['phone']) ?></a></p>
     <p><strong>Views:</strong> <?= $biz['views'] ?? 0 ?></p>
     <p><strong>Rating:</strong> <span id="avg-rating">Loading...</span></p>
-
-    <?php if (isset($_SESSION['user'])): ?>
-        <button id="favBtn" class="favourite-btn" onclick="toggleFavourite(<?= $biz_id ?>)">
-            <?= $is_favourited ? '❤️ Favourited' : '🤍 Favourite' ?>
-        </button>
-    <?php endif; ?>
-
     <p><?= nl2br(htmlspecialchars($biz['description'])) ?></p>
+
+    <span class="favorite-btn" onclick="toggleFavorite(<?= $biz_id ?>)">❤️ Save to Favorites</span>
 
     <?php if (!empty($biz['location'])): ?>
         <div class="map-container">
@@ -95,7 +101,6 @@ $total_pages = ceil($total_reviews / $perPage);
     <hr>
 
     <h2>Reviews</h2>
-
     <?php if (isset($_SESSION['user'])): ?>
         <form id="reviewForm">
             <input type="hidden" name="biz_id" value="<?= $biz_id ?>">
@@ -114,64 +119,52 @@ $total_pages = ceil($total_reviews / $perPage);
         <p><a href="../auth/login.php">Login</a> to leave a review.</p>
     <?php endif; ?>
 
-    <div id="reviews">
-        <?php foreach ($reviews as $rev): ?>
-            <div class="review-box">
-                <p><strong><?= htmlspecialchars($rev['name']) ?>:</strong></p>
-                <div class="stars">
-                    <?php for ($i = 1; $i <= 5; $i++): ?>
-                        <?= $i <= $rev['rating'] ? '⭐' : '☆' ?>
-                    <?php endfor; ?>
-                </div>
-                <p><?= nl2br(htmlspecialchars($rev['content'])) ?></p>
-                <small>Posted on <?= date('F j, Y', strtotime($rev['created_at'])) ?></small>
-                <div class="review-actions">
-                    <a href="report_review.php?id=<?= $rev['id'] ?>" onclick="return confirm('Report this review as abusive?')">🚩 Report</a>
-                    <?php if (isset($_SESSION['user']) && $_SESSION['user']['id'] == $rev['user_id']): ?>
-                        <a href="edit_review.php?id=<?= $rev['id'] ?>">✏️ Edit</a>
-                        <a href="delete_review.php?id=<?= $rev['id'] ?>" onclick="return confirm('Delete this review?')">🗑️ Delete</a>
-                    <?php endif; ?>
-                </div>
-            </div>
-        <?php endforeach; ?>
-    </div>
+    <div id="reviews-container"></div>
+    <button id="loadMoreBtn">Load More</button>
+</div>
 
-    <div class="pagination">
-        <?php for ($p = 1; $p <= $total_pages; $p++): ?>
-            <a href="?id=<?= $biz_id ?>&page=<?= $p ?>" <?= $p == $page ? 'style="font-weight:bold;"' : '' ?>><?= $p ?></a>
-        <?php endfor; ?>
-    </div>
-
-    <hr>
-
-    <h3>Related Businesses</h3>
-    <div class="listing-grid">
-        <?php
-        $cat = $biz['category'] ?? 'General';
-        $stmt = $pdo->prepare("SELECT * FROM businesses WHERE category = ? AND id != ? LIMIT 4");
-        $stmt->execute([$cat, $biz_id]);
-        $related = $stmt->fetchAll();
-        foreach ($related as $r): ?>
-            <div class="listing-card">
-                <h4><a href="show.php?id=<?= $r['id'] ?>"><?= htmlspecialchars($r['name']) ?></a></h4>
-                <p><?= htmlspecialchars(substr($r['description'], 0, 60)) ?>...</p>
-            </div>
-        <?php endforeach; ?>
-    </div>
-
+<!-- Edit Review Modal -->
+<div id="editModal" class="modal">
+  <div class="modal-content">
+    <h3>Edit Review</h3>
+    <form id="editReviewForm">
+      <input type="hidden" name="review_id" id="edit_review_id">
+      <textarea name="content" id="edit_content" rows="4" required></textarea><br>
+      <label>Rating:</label>
+      <select name="rating" id="edit_rating" required>
+        <option value="5">⭐⭐⭐⭐⭐</option>
+        <option value="4">⭐⭐⭐⭐</option>
+        <option value="3">⭐⭐⭐</option>
+        <option value="2">⭐⭐</option>
+        <option value="1">⭐</option>
+      </select><br>
+      <button type="submit">Update</button>
+      <button type="button" onclick="closeModal()">Cancel</button>
+    </form>
+  </div>
 </div>
 
 <script>
-function toggleFavourite(bizId) {
-    fetch('../../controllers/toggle_favourite.php?biz_id=' + bizId)
+let currentPage = 1;
+
+function loadReviews(page = 1) {
+    fetch("../../controllers/fetch_reviews.php?biz_id=<?= $biz_id ?>&page=" + page)
     .then(res => res.text())
-    .then(data => {
-        document.getElementById('favBtn').innerText = data.includes('added') ? '❤️ Favourited' : '🤍 Favourite';
-        document.getElementById('favBtn').style.background = data.includes('added') ? '#e74c3c' : '#3498db';
+    .then(html => {
+        if (page === 1) {
+            document.getElementById('reviews-container').innerHTML = html;
+        } else {
+            document.getElementById('reviews-container').insertAdjacentHTML('beforeend', html);
+        }
     });
 }
 
-document.getElementById("reviewForm")?.addEventListener("submit", function(e) {
+document.getElementById('loadMoreBtn').addEventListener('click', () => {
+    currentPage++;
+    loadReviews(currentPage);
+});
+
+document.getElementById('reviewForm')?.addEventListener('submit', function(e) {
     e.preventDefault();
     const formData = new FormData(this);
     fetch("../../controllers/submit_review.php", {
@@ -179,16 +172,63 @@ document.getElementById("reviewForm")?.addEventListener("submit", function(e) {
         body: formData
     }).then(res => res.text()).then(msg => {
         alert(msg);
-        location.reload();
+        currentPage = 1;
+        loadReviews(currentPage);
     });
 });
+
+function openEditModal(id, content, rating) {
+    document.getElementById('edit_review_id').value = id;
+    document.getElementById('edit_content').value = content;
+    document.getElementById('edit_rating').value = rating;
+    document.getElementById('editModal').style.display = 'flex';
+}
+
+function closeModal() {
+    document.getElementById('editModal').style.display = 'none';
+}
+
+document.getElementById('editReviewForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    fetch("../../controllers/edit_review.php", {
+        method: "POST",
+        body: formData
+    }).then(res => res.text()).then(msg => {
+        alert(msg);
+        closeModal();
+        currentPage = 1;
+        loadReviews(currentPage);
+    });
+});
+
+function deleteReview(id) {
+    if (confirm("Are you sure you want to delete this review?")) {
+        fetch("../../controllers/delete_review.php", {
+            method: "POST",
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: "review_id=" + id
+        }).then(res => res.text()).then(msg => {
+            alert(msg);
+            currentPage = 1;
+            loadReviews(currentPage);
+        });
+    }
+}
+
+function toggleFavorite(biz_id) {
+    fetch("../../controllers/toggle_favorite.php?biz_id=" + biz_id)
+    .then(res => res.text())
+    .then(msg => alert(msg));
+}
 
 document.addEventListener("DOMContentLoaded", () => {
     fetch("../../controllers/get_average_rating.php?biz_id=<?= $biz_id ?>")
     .then(res => res.text())
-    .then(text => {
-        document.getElementById("avg-rating").innerText = text;
+    .then(rating => {
+        document.getElementById("avg-rating").innerText = rating;
     });
+    loadReviews(currentPage);
 });
 </script>
 </body>
