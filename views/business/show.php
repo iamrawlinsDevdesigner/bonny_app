@@ -52,8 +52,21 @@ if (!$biz) {
             .business-main { flex: 2; }
             .business-sidebar { flex: 1; }
         }
-        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; }
-        .modal-content { background: #fff; padding: 20px; border-radius: 5px; width: 400px; max-width: 90%; }
+        .modal {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  justify-content: center;
+  align-items: center;
+}
+.modal-content {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+}
+
     </style>
 </head>
 <body>
@@ -122,6 +135,14 @@ if (!$biz) {
 
 <!-- Edit Review Modal -->
 <div id="editModal" class="modal">
+  <div id="moderationModal" class="modal">
+  <div class="modal-content">
+    <h3>Thank you!</h3>
+    <p>Your comment is awaiting moderation. It will appear once approved.</p>
+    <button onclick="closeModerationModal()">OK</button>
+  </div>
+</div>
+
   <div class="modal-content">
     <h3>Edit Review</h3>
     <form id="editReviewForm">
@@ -168,11 +189,21 @@ document.getElementById('reviewForm')?.addEventListener('submit', function(e) {
         method: "POST",
         body: formData
     }).then(res => res.text()).then(msg => {
-        alert(msg);
-        currentPage = 1;
-        loadReviews(currentPage);
+        showModerationModal(msg);
+        this.reset();
     });
 });
+
+function showModerationModal(message) {
+    const modal = document.getElementById('moderationModal');
+    modal.querySelector('p').innerText = message;
+    modal.style.display = 'flex';
+}
+
+function closeModerationModal() {
+    document.getElementById('moderationModal').style.display = 'none';
+}
+
 
 document.addEventListener('click', function(e) {
     if (e.target.classList.contains('edit-btn')) {

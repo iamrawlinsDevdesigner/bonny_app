@@ -7,18 +7,41 @@ $page = (int) ($_GET['page'] ?? 1);
 $limit = 5;
 $offset = ($page - 1) * $limit;
 
-$stmt = $pdo->prepare("SELECT r.*, u.name, u.id as user_id 
-    FROM reviews r 
-    JOIN users u ON r.user_id = u.id 
-    WHERE r.business_id = ? 
-    ORDER BY created_at DESC 
-    LIMIT ? OFFSET ?");
-$stmt->execute([$biz_id, $limit, $offset]);
+// Fetch approved reviews OR pending ones belonging to logged-in user
+if (isset($_SESSION['user'])) {
+    $user_id = $_SESSION['user']['id'];
+    $stmt = $pdo->prepare("
+        SELECT r.*, u.name, u.id as user_id 
+        FROM reviews r
+        JOIN users u ON r.user_id = u.id
+        WHERE r.business_id = ?
+          AND (r.status = 'approved' OR (r.status = 'pending' AND r.user_id = ?))
+        ORDER BY created_at DESC
+        LIMIT ? OFFSET ?
+    ");
+    $stmt->execute([$biz_id, $user_id, $limit, $offset]);
+} else {
+    $stmt = $pdo->prepare("
+        SELECT r.*, u.name, u.id as user_id 
+        FROM reviews r
+        JOIN users u ON r.user_id = u.id
+        WHERE r.business_id = ? AND r.status = 'approved'
+        ORDER BY created_at DESC
+        LIMIT ? OFFSET ?
+    ");
+    $stmt->execute([$biz_id, $limit, $offset]);
+}
+
 $reviews = $stmt->fetchAll();
 
 foreach ($reviews as $rev): ?>
   <div class="review-box">
-    <p><strong><?= htmlspecialchars($rev['name']) ?>:</strong></p>
+    <p>
+      <strong><?= htmlspecialchars($rev['name']) ?>:</strong>
+      <?php if ($rev['status'] == 'pending' && isset($_SESSION['user']) && $_SESSION['user']['id'] == $rev['user_id']): ?>
+        <span style="color: orange; font-size: 0.9em;">(Pending Approval)</span>
+      <?php endif; ?>
+    </p>
     <div class="stars">
       <?php for ($i = 1; $i <= 5; $i++): ?>
         <?= $i <= $rev['rating'] ? '⭐' : '☆' ?>
@@ -39,15 +62,13 @@ foreach ($reviews as $rev): ?>
 
     <?php if (isset($_SESSION['user']) && $_SESSION['user']['id'] == $rev['user_id']): ?>
       <div class="review-actions">
-        <!-- Safe Edit button with encoded content -->
         <button 
             class="edit-btn" 
             data-review-id="<?= $rev['id'] ?>" 
-            data-content="<?= htmlspecialchars($rev['content'], ENT_QUOTES) ?>" 
+            data-content="<?= htmlspecialchars(addslashes($rev['content'])) ?>" 
             data-rating="<?= $rev['rating'] ?>">
           ✏️ Edit
         </button>
-        <!-- Delete button -->
         <button onclick="deleteReview(<?= $rev['id'] ?>)">🗑️ Delete</button>
       </div>
     <?php endif; ?>
