@@ -248,10 +248,18 @@ function deleteReview(id) {
 }
 
 function toggleFavorite(biz_id) {
-    fetch("../../controllers/toggle_favorite.php?biz_id=" + biz_id)
+    fetch("../../controllers/toggle_favourite.php", {
+        method: "POST",
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: "biz_id=" + encodeURIComponent(biz_id)
+    })
     .then(res => res.text())
-    .then(msg => alert(msg));
+    .then(msg => {
+        alert(msg); // Or dynamically change heart icon ❤️ / 🤍
+    });
 }
+
+
 
 document.addEventListener("DOMContentLoaded", () => {
     fetch("../../controllers/get_average_rating.php?biz_id=<?= $biz_id ?>")
