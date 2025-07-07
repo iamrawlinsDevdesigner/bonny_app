@@ -27,6 +27,15 @@ if (!$biz) {
     echo "Business not found.";
     exit;
 }
+
+$is_fav = false;
+if (isset($_SESSION['user'])) {
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM favourites WHERE user_id = ? AND business_id = ?");
+    $stmt->execute([$_SESSION['user']['id'], $biz_id]);
+    $is_fav = $stmt->fetchColumn() > 0;
+}
+
+
 ?>
 
 <!DOCTYPE html>
@@ -86,7 +95,11 @@ if (!$biz) {
             <p><strong>Rating:</strong> <span id="avg-rating">Loading...</span></p>
             <p><?= nl2br(htmlspecialchars($biz['description'])) ?></p>
 
-            <span class="favorite-btn" onclick="toggleFavorite(<?= $biz_id ?>)">❤️ Save to Favorites</span>
+            <span class="favorite-btn" onclick="toggleFavorite(<?= $biz_id ?>)">
+                <?= $is_fav ? "❤️ Favourited" : "🤍 Favourite" ?>
+            </span>
+
+
 
             <?php if (!empty($biz['location'])): ?>
                 <div class="map-container">
@@ -248,16 +261,21 @@ function deleteReview(id) {
 }
 
 function toggleFavorite(biz_id) {
+    const favBtn = document.querySelector('.favorite-btn');
+
     fetch("../../controllers/toggle_favourite.php", {
         method: "POST",
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: "biz_id=" + encodeURIComponent(biz_id)
     })
     .then(res => res.text())
-    .then(msg => {
-        alert(msg); // Or dynamically change heart icon ❤️ / 🤍
-    });
+    .then(response => {
+        // Update button text instantly
+        favBtn.textContent = response.trim();
+    })
+    .catch(err => console.error("Favourite toggle failed:", err));
 }
+
 
 
 
