@@ -142,9 +142,11 @@ if (isset($_SESSION['user'])) {
                 </div>
             </div>
             <div class="owner-actions">
-    <a href="../messages/send.php?to=<?= $biz['user_id'] ?>" class="action-btn">📩 Send Message</a>
-    <a href="https://wa.me/<?= preg_replace('/\D/', '', $biz['phone']) ?>" target="_blank" class="action-btn whatsapp-btn">💬 Chat on WhatsApp</a>
+    <button onclick="openMessageModal()" class="action-btn">📩 Send Message</button>
+    <a href="https://wa.me/<?= preg_replace('/\D/', '', $biz['phone']) ?>?text=Hi%20<?= urlencode($biz['owner_name']) ?>,%20I%20found%20your%20business%20on%20Bonny%20App." 
+       target="_blank" class="action-btn whatsapp-btn">💬 Chat on WhatsApp</a>
 </div>
+
 
         </div>
     </div>
@@ -178,6 +180,20 @@ if (isset($_SESSION['user'])) {
     </form>
   </div>
 </div>
+
+<!-- Send Message Modal -->
+<div id="messageModal" class="modal">
+  <div class="modal-content">
+    <h3>Send Message to <?= htmlspecialchars($biz['owner_name']) ?></h3>
+    <form id="sendMessageForm">
+      <input type="hidden" name="receiver_id" value="<?= $biz['user_id'] ?>">
+      <textarea name="message" rows="4" placeholder="Type your message..." required></textarea><br>
+      <button type="submit">Send</button>
+      <button type="button" onclick="closeMessageModal()">Cancel</button>
+    </form>
+  </div>
+</div>
+
 
 <script>
 let currentPage = 1;
