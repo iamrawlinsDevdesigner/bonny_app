@@ -1,4 +1,7 @@
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <?php
+
 include __DIR__ . '/../../includes/db.php';
 include __DIR__ . '/../../includes/flash.php';
 if (session_status() === PHP_SESSION_NONE) session_start();
@@ -182,17 +185,22 @@ if (isset($_SESSION['user'])) {
 </div>
 
 <!-- Send Message Modal -->
+<button id="openMessageModal">📩 Send Message</button>
+<button onclick="window.open('https://wa.me/<?= $biz['phone'] ?>', '_blank')">💬 Chat on WhatsApp</button>
+
 <div id="messageModal" class="modal">
   <div class="modal-content">
-    <h3>Send Message to <?= htmlspecialchars($biz['owner_name']) ?></h3>
+    <h3>Send a Message</h3>
     <form id="sendMessageForm">
       <input type="hidden" name="receiver_id" value="<?= $biz['user_id'] ?>">
-      <textarea name="message" rows="4" placeholder="Type your message..." required></textarea><br>
+      <input type="hidden" name="business_id" value="<?= $biz_id ?>">
+      <textarea name="message" placeholder="Write your message..." required></textarea><br>
       <button type="submit">Send</button>
       <button type="button" onclick="closeMessageModal()">Cancel</button>
     </form>
   </div>
 </div>
+
 
 
 <script>
@@ -331,6 +339,43 @@ function dislikeReview(review_id) {
         document.getElementById('dislike-count-' + review_id).innerText = newCount;
     });
 }
+
+// Send Message Modal
+function openMessageModal() {
+    document.getElementById('messageModal').style.display = 'flex';
+}
+
+function closeMessageModal() {
+    document.getElementById('messageModal').style.display = 'none';
+}
+
+document.getElementById('sendMessageForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    fetch("../../controllers/send_message.php", {
+        method: "POST",
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        Swal.fire({
+        icon: data.status === 'success' ? 'success' : 'error',
+        title: data.status === 'success' ? 'Message Sent!' : 'Oops...',
+        text: data.user_message,
+        confirmButtonColor: '#007bff'
+    });
+    if (data.status === 'success') {
+        document.getElementById('messageModal').style.display = 'none';
+        document.getElementById('sendMessageForm').reset();
+        
+        }
+
+    });
+    
+});
+
+
+
 </script>
 </body>
 </html>
