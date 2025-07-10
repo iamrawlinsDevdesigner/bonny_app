@@ -141,7 +141,11 @@ if (isset($_SESSION['user'])) {
                     <small>Member since <?= date('F Y', strtotime($biz['member_since'])) ?></small>
                 </div>
             </div>
-            <p><a href="../user/profile.php?id=<?= $biz['user_id'] ?>">View Owner Profile</a></p>
+            <div class="owner-actions">
+    <a href="../messages/send.php?to=<?= $biz['user_id'] ?>" class="action-btn">📩 Send Message</a>
+    <a href="https://wa.me/<?= preg_replace('/\D/', '', $biz['phone']) ?>" target="_blank" class="action-btn whatsapp-btn">💬 Chat on WhatsApp</a>
+</div>
+
         </div>
     </div>
 </div>
